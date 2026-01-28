@@ -1,0 +1,67 @@
+{{/* index.html - Main page content. Defines the "content" template that layout embeds. */}}
+{{define "content"}}
+{{if .NeedsWeekReview}}
+<div class="week-review">
+  <h3>📅 7-day review</h3>
+  <p>It's been 7 days. You can <strong>edit habit names</strong> below, then complete the review to increment all habit targets. Adding a new task is optional.</p>
+  <form method="post" action="/week-review" style="display:inline;">
+    <button type="submit" class="btn btn-primary">Complete week review (increment all)</button>
+  </form>
+</div>
+{{end}}
+
+<div class="card">
+  <h2 style="margin-top:0;">Today — {{.Today}}</h2>
+  {{if not .Habits}}
+  <p style="color: var(--muted);">No habits yet. Add one below to get started.</p>
+  {{else}}
+  {{range .Habits}}
+  {{$h := .}}
+  <div class="habit-row">
+    {{if $.NeedsWeekReview}}
+    <form method="post" action="/edit-habit" class="habit-name-form">
+      <input type="hidden" name="habit_id" value="{{.ID}}">
+      <input type="text" name="name" value="{{.Name}}" class="habit-name-input" required>
+      <input type="hidden" name="quantity" value="{{.Quantity}}">
+      <input type="hidden" name="unit" value="{{.Unit}}">
+      <button type="submit" class="btn btn-ghost btn-sm">Save name</button>
+    </form>
+    {{else}}
+    <span class="habit-name">{{.Name}}</span>
+    {{end}}
+    <span class="habit-qty">{{.Quantity}} {{.Unit}}</span>
+    {{if index $.Streaks .ID}}<span class="streak">🔥 {{index $.Streaks .ID}} day streak</span>{{end}}
+    {{if index $.CompletedToday .ID}}
+    <form method="post" action="/complete" style="display:inline;">
+      <input type="hidden" name="habit_id" value="{{.ID}}">
+      <input type="hidden" name="action" value="uncomplete">
+      <button type="submit" class="btn btn-ghost">Undo</button>
+    </form>
+    {{else}}
+    <form method="post" action="/complete" style="display:inline;">
+      <input type="hidden" name="habit_id" value="{{.ID}}">
+      <button type="submit" class="btn btn-success">Done</button>
+    </form>
+    {{end}}
+  </div>
+  {{/* Visual: last 30 days calendar for this habit */}}
+  <div class="calendar" style="padding-left: 0;">
+    {{range index $.CalendarByHabit $h.ID}}
+    <span class="cal-day {{if index $.CalendarHabit (printf "%d_%s" $h.ID .)}}done{{end}}" title="{{.}}"></span>
+    {{end}}
+  </div>
+  {{end}}
+  {{end}}
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;">Add a habit</h3>
+  <p style="color: var(--muted); font-size: 0.9rem;">Every 7 days you'll be asked to increment all habits. You can add a new task anytime (optional at week review).</p>
+  <form class="add-habit" method="post" action="/add-habit">
+    <input type="text" name="name" placeholder="e.g. Pushups" required>
+    <input type="number" name="quantity" placeholder="5" value="5" min="1" max="999">
+    <input type="text" name="unit" placeholder="e.g. pushups">
+    <button type="submit" class="btn btn-primary">Add</button>
+  </form>
+</div>
+{{end}}

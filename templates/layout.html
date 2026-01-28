@@ -1,0 +1,75 @@
+{{/* layout.html - Base template that wraps every page.
+    In Go templates, {{.}} is the current data (our TemplateData).
+    We define a "layout" template and embed the page content with "block" / "template". */}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Habit Tracker</title>
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --card: #1a1a1f;
+      --text: #e8e6e3;
+      --muted: #8b8685;
+      --accent: #7c9cbf;
+      --success: #6b9080;
+      --danger: #c17c74;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 24px; min-height: 100vh; }
+    .container { max-width: 720px; margin: 0 auto; }
+    h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 8px; }
+    .sub { color: var(--muted); font-size: 0.95rem; margin-bottom: 24px; }
+    .card { background: var(--card); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+    .habit-row { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .habit-row:last-child { border-bottom: none; }
+    .habit-name { flex: 1; font-weight: 500; }
+    .habit-name-form { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+    .habit-name-input { flex: 1; min-width: 120px; padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.12); background: var(--bg); color: var(--text); font-size: 0.95rem; }
+    .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+    .habit-qty { color: var(--accent); font-size: 0.9rem; }
+    .streak { font-size: 0.85rem; color: var(--success); }
+    .btn { display: inline-block; padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.9rem; text-decoration: none; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-ghost { background: transparent; color: var(--muted); }
+    .btn-ghost:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+    .calendar { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 12px; }
+    .cal-day { width: 14px; height: 14px; border-radius: 3px; background: rgba(255,255,255,0.08); }
+    .cal-day.done { background: var(--success); }
+    .msg { padding: 12px; border-radius: 8px; margin-bottom: 16px; background: rgba(107,144,128,0.2); color: var(--success); }
+    .week-review { background: rgba(193,124,116,0.15); border: 1px solid var(--danger); padding: 16px; border-radius: var(--radius); margin-bottom: 20px; }
+    .week-review h3 { margin-top: 0; color: var(--danger); }
+    form.add-habit { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-top: 16px; }
+    form.add-habit input { padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: var(--bg); color: var(--text); }
+    form.add-habit input[type="number"] { width: 70px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Habit Tracker</h1>
+    <p class="sub">Track daily habits. Miss a day and the target drops a little. Every 7 days, level up all habits.</p>
+    {{if .Message}}<div class="msg" id="flash-msg">{{.Message}}</div>{{end}}
+    {{template "content" .}}
+  </div>
+  {{if .Message}}
+  <script>
+    // Hide the success/error message after 3s and strip ?edited=1 etc. from the URL
+    // so the message doesn't show again on refresh.
+    (function() {
+      var el = document.getElementById('flash-msg');
+      if (!el) return;
+      setTimeout(function() {
+        el.style.display = 'none';
+        if (window.history.replaceState) {
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+      }, 3000);
+    })();
+  </script>
+  {{end}}
+</body>
+</html>
