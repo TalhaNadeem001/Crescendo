@@ -23,6 +23,7 @@ func init() {
 // TemplateData holds everything we pass to the HTML template.
 type TemplateData struct {
 	Habits           []Habit
+	Todos            []Todo
 	History          map[string]DayRecord
 	Today            string
 	TodayRecord      DayRecord
@@ -123,10 +124,17 @@ func HandleIndex(w http.ResponseWriter, r *http.Request) {
 		msg = "Habit name updated!"
 	case r.URL.Query().Get("error") == "name":
 		msg = "Please enter a habit name."
+	case r.URL.Query().Get("error") == "todo":
+		msg = "Please enter a task."
+	case r.URL.Query().Get("todo") == "1":
+		msg = "Task added!"
+	case r.URL.Query().Get("todo") == "done":
+		msg = "Task completed!"
 	}
 
 	td := TemplateData{
 		Habits:          data.Habits,
+		Todos:           data.Todos,
 		History:         data.History,
 		Today:           Today(),
 		TodayRecord:     todayRec,
@@ -310,6 +318,65 @@ func HandleEditHabit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/?edited=1", http.StatusFound)
+}
+
+// HandleAddTodo handles POST to add a task to the todo list. Form: text=Task description
+func HandleAddTodo(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	text := strings.TrimSpace(r.FormValue("text"))
+	if text == "" {
+		http.Redirect(w, r, "/?error=todo", http.StatusFound)
+		return
+	}
+	data, err := LoadData()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	t := Todo{
+		ID:   NextTodoID(data),
+		Text: text,
+	}
+	data.Todos = append(data.Todos, t)
+	if err := SaveData(data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/?todo=1", http.StatusFound)
+}
+
+// HandleCompleteTodo handles POST when user checks a task — removes it from the list.
+func HandleCompleteTodo(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	todoIDStr := r.FormValue("todo_id")
+	todoID, err := strconv.Atoi(todoIDStr)
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+	data, err := LoadData()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var newTodos []Todo
+	for _, t := range data.Todos {
+		if t.ID != todoID {
+			newTodos = append(newTodos, t)
+		}
+	}
+	data.Todos = newTodos
+	if err := SaveData(data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/?todo=done", http.StatusFound)
 }
 
 // HandleDeleteHabit handles POST to delete a habit (optional - for cleanup).

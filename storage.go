@@ -32,6 +32,7 @@ func LoadData() (*AppData, error) {
 		if os.IsNotExist(err) {
 			return &AppData{
 				Habits:  []Habit{},
+				Todos:   []Todo{},
 				History: make(map[string]DayRecord), // maps must be initialized with make() before use
 			}, nil
 		}
@@ -47,6 +48,9 @@ func LoadData() (*AppData, error) {
 	// If History was null in JSON, it decodes as nil. We need a non-nil map to add entries.
 	if data.History == nil {
 		data.History = make(map[string]DayRecord)
+	}
+	if data.Todos == nil {
+		data.Todos = []Todo{}
 	}
 	return &data, nil
 }

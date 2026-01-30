@@ -18,6 +18,8 @@ func main() {
 	http.HandleFunc("/add-habit", HandleAddHabit)
 	http.HandleFunc("/edit-habit", HandleEditHabit)
 	http.HandleFunc("/delete-habit", HandleDeleteHabit)
+	http.HandleFunc("/add-todo", HandleAddTodo)
+	http.HandleFunc("/complete-todo", HandleCompleteTodo)
 
 	// Start the HTTP server. ListenAndServe listens on port 8080 and blocks until the program exits.
 	// The second argument is the handler for all requests; nil means use the default multiplexer

@@ -150,6 +150,17 @@ func NextHabitID(data *AppData) int {
 	return max + 1
 }
 
+// NextTodoID returns the next unused todo ID (max existing + 1).
+func NextTodoID(data *AppData) int {
+	max := 0
+	for _, t := range data.Todos {
+		if t.ID > max {
+			max = t.ID
+		}
+	}
+	return max + 1
+}
+
 // DatesInRange returns all date strings from start to end (inclusive), sorted.
 func DatesInRange(start, end string) ([]string, error) {
 	s, err := time.Parse(dateLayout, start)

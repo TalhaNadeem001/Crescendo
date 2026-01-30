@@ -19,11 +19,11 @@
       --radius: 12px;
     }
     * { box-sizing: border-box; }
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 24px; min-height: 100vh; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; min-height: 100vh; padding: 80px 32px 48px; }
     .container { max-width: 720px; margin: 0 auto; }
-    h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 8px; }
-    .sub { color: var(--muted); font-size: 0.95rem; margin-bottom: 24px; }
-    .card { background: var(--card); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+    h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 8px; margin-top: 8px; }
+    .sub { color: var(--muted); font-size: 0.95rem; margin-bottom: 28px; }
+    .card { background: var(--card); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; }
     .habit-row { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
     .habit-row:last-child { border-bottom: none; }
     .habit-name { flex: 1; font-weight: 500; }
@@ -46,10 +46,48 @@
     form.add-habit { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-top: 16px; }
     form.add-habit input { padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: var(--bg); color: var(--text); }
     form.add-habit input[type="number"] { width: 70px; }
+    .todo-section-header { margin-bottom: 20px; }
+    .todo-section-header h2 { margin: 0 0 4px 0; font-size: 1.35rem; font-weight: 600; }
+    .todo-section-sub { color: var(--muted); font-size: 0.9rem; margin: 0; }
+    .todo-card { margin-bottom: 28px; }
+    .todo-card-title { margin: 0 0 16px 0; font-size: 1.15rem; font-weight: 600; }
+    form.todo-add { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
+    .todo-input { flex: 1; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: var(--bg); color: var(--text); font-size: 0.95rem; }
+    .todo-list { list-style: none; margin: 0; padding: 0; }
+    .todo-item { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .todo-item:last-child { border-bottom: none; }
+    .todo-check { width: 22px; height: 22px; min-width: 22px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: var(--muted); cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; }
+    .todo-check:hover { background: var(--success); color: #fff; border-color: var(--success); }
+    .todo-text { flex: 1; }
   </style>
 </head>
 <body>
   <div class="container">
+    <header class="todo-section-header">
+      <h2>TODO List</h2>
+      <p class="todo-section-sub">Organize Your Day with daily tasks</p>
+    </header>
+    <div class="card todo-card">
+      <form class="todo-add" method="post" action="/add-todo">
+        <input type="text" name="text" placeholder="Add a task…" class="todo-input" required>
+        <button type="submit" class="btn btn-primary btn-sm">Add</button>
+      </form>
+      {{if .Todos}}
+      <ul class="todo-list">
+        {{range .Todos}}
+        <li class="todo-item">
+          <form method="post" action="/complete-todo" style="display:flex;align-items:center;gap:10px;">
+            <input type="hidden" name="todo_id" value="{{.ID}}">
+            <button type="submit" class="todo-check" title="Complete (remove)">✓</button>
+            <span class="todo-text">{{.Text}}</span>
+          </form>
+        </li>
+        {{end}}
+      </ul>
+      {{else}}
+      <p style="color: var(--muted); font-size: 0.9rem; margin: 12px 0 0 0;">No tasks. Add one above.</p>
+      {{end}}
+    </div>
     <h1>Habit Tracker</h1>
     <p class="sub">Track daily habits. Miss a day and the target drops a little. Every 7 days, level up all habits.</p>
     {{if .Message}}<div class="msg" id="flash-msg">{{.Message}}</div>{{end}}

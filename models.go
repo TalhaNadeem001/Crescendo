@@ -16,6 +16,12 @@ type Habit struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+// Todo is a single checklist task. When checked, it is removed.
+type Todo struct {
+	ID   int    `json:"id"`
+	Text string `json:"text"`
+}
+
 // DayRecord stores what happened on a specific day.
 type DayRecord struct {
 	Date                   string `json:"date"`
@@ -27,7 +33,8 @@ type DayRecord struct {
 // AppData is the root structure we persist to JSON.
 type AppData struct {
 	Habits         []Habit              `json:"habits"`
-	History        map[string]DayRecord  `json:"history"`
+	Todos          []Todo               `json:"todos"`
+	History        map[string]DayRecord `json:"history"`
 	LastWeekReview string               `json:"last_week_review"`
 	CreatedAt      string               `json:"created_at"`
 }
