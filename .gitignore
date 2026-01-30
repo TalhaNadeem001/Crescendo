@@ -3,3 +3,4 @@ habit-tracker
 
 # Data file (optional: remove this line if you want to commit sample data)
 data.json
+.env

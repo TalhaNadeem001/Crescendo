@@ -59,6 +59,10 @@
     .todo-check { width: 22px; height: 22px; min-width: 22px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: var(--muted); cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; }
     .todo-check:hover { background: var(--success); color: #fff; border-color: var(--success); }
     .todo-text { flex: 1; }
+    .todo-item { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .todo-row-form { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+    .todo-simplify-form { flex-shrink: 0; }
+    .todo-simplify-btn { margin-left: auto; }
   </style>
 </head>
 <body>
@@ -76,10 +80,14 @@
       <ul class="todo-list">
         {{range .Todos}}
         <li class="todo-item">
-          <form method="post" action="/complete-todo" style="display:flex;align-items:center;gap:10px;">
+          <form method="post" action="/complete-todo" class="todo-row-form">
             <input type="hidden" name="todo_id" value="{{.ID}}">
             <button type="submit" class="todo-check" title="Complete (remove)">✓</button>
             <span class="todo-text">{{.Text}}</span>
+          </form>
+          <form method="post" action="/simplify-todo" class="todo-simplify-form">
+            <input type="hidden" name="todo_id" value="{{.ID}}">
+            <button type="submit" class="btn btn-ghost btn-sm todo-simplify-btn" title="Break into simpler steps">Simplify</button>
           </form>
         </li>
         {{end}}

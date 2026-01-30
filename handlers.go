@@ -6,6 +6,7 @@ package main
 import (
 	"html/template"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -130,6 +131,10 @@ func HandleIndex(w http.ResponseWriter, r *http.Request) {
 		msg = "Task added!"
 	case r.URL.Query().Get("todo") == "done":
 		msg = "Task completed!"
+	case r.URL.Query().Get("todo") == "simplified":
+		msg = "Task broken down into simpler steps!"
+	case r.URL.Query().Get("error") == "simplify":
+		msg = "Could not simplify task. Check OPENAI_KEY and try again."
 	}
 
 	td := TemplateData{
@@ -346,6 +351,65 @@ func HandleAddTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/?todo=1", http.StatusFound)
+}
+
+// HandleSimplifyTodo handles POST when user clicks Simplify — breaks the task into 3 subtasks via OpenAI.
+func HandleSimplifyTodo(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	todoIDStr := r.FormValue("todo_id")
+	todoID, err := strconv.Atoi(todoIDStr)
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+
+	data, err := LoadData()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var todoText string
+	var todoIndex int
+	for i, t := range data.Todos {
+		if t.ID == todoID {
+			todoText = t.Text
+			todoIndex = i
+			break
+		}
+	}
+	if todoText == "" {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+
+	apiKey := os.Getenv("OPENAI_KEY")
+	subs, err := BreakIntoSubtasks(todoText, apiKey)
+	if err != nil {
+		http.Redirect(w, r, "/?error=simplify", http.StatusFound)
+		return
+	}
+
+	// Remove the original todo
+	withoutTodo := append(append([]Todo{}, data.Todos[:todoIndex]...), data.Todos[todoIndex+1:]...)
+	data.Todos = withoutTodo
+
+	// Assign IDs and build new todos (insert at same position)
+	nextID := NextTodoID(data)
+	var newTodos []Todo
+	for j, text := range subs {
+		newTodos = append(newTodos, Todo{ID: nextID + j, Text: strings.TrimSpace(text)})
+	}
+	data.Todos = append(append(data.Todos[:todoIndex], newTodos...), data.Todos[todoIndex:]...)
+
+	if err := SaveData(data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/?todo=simplified", http.StatusFound)
 }
 
 // HandleCompleteTodo handles POST when user checks a task — removes it from the list.
