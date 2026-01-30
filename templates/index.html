@@ -44,8 +44,8 @@
     </form>
     {{end}}
   </div>
-  {{/* Visual: last 30 days calendar for this habit */}}
-  <div class="calendar" style="padding-left: 0;">
+  {{/* One box per day (creation → today); green = completed that day */}}
+  <div class="calendar" style="padding-left: 0;" aria-label="Days: green = done">
     {{range index $.CalendarByHabit $h.ID}}
     <span class="cal-day {{if index $.CalendarHabit (printf "%d_%s" $h.ID .)}}done{{end}}" title="{{.}}"></span>
     {{end}}

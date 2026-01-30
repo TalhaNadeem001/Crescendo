@@ -78,10 +78,11 @@ func HandleIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build per-habit date ranges for the calendar heatmap.
-	// The first box shown is the day the habit was created; we don't show dates before that.
+	// One box per day from habit creation through today; completed days get class "done" (green).
 	calMap := make(map[string]bool)
 	calendarByHabit := make(map[int][]string)
-	today := time.Now()
+	now := time.Now()
+	todayEnd := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, now.Location())
 	for _, h := range data.Habits {
 		start := h.CreatedAt
 		// If CreatedAt is zero (older data), fall back to app CreatedAt or today.
@@ -92,11 +93,11 @@ func HandleIndex(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			if start.IsZero() {
-				start = today
+				start = now
 			}
 		}
 		var dates []string
-		for d := start; !d.After(today); d = d.AddDate(0, 0, 1) {
+		for d := start; !d.After(todayEnd); d = d.AddDate(0, 0, 1) {
 			ds := d.Format("2006-01-02")
 			dates = append(dates, ds)
 			rec := data.History[ds]
