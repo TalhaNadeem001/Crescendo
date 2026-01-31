@@ -129,8 +129,6 @@ func HandleIndex(w http.ResponseWriter, r *http.Request) {
 		msg = "Please enter a task."
 	case r.URL.Query().Get("todo") == "1":
 		msg = "Task added!"
-	case r.URL.Query().Get("todo") == "done":
-		msg = "Task completed!"
 	case r.URL.Query().Get("todo") == "simplified":
 		msg = "Task broken down into simpler steps!"
 	case r.URL.Query().Get("error") == "simplify":
@@ -440,7 +438,7 @@ func HandleCompleteTodo(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/?todo=done", http.StatusFound)
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 // HandleDeleteHabit handles POST to delete a habit (optional - for cleanup).
