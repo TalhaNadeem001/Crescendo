@@ -39,10 +39,21 @@
     .btn-ghost:hover { background: rgba(255,255,255,0.08); color: var(--text); }
     .calendar { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 12px; align-items: center; }
     .cal-day { width: 14px; height: 14px; min-width: 14px; border-radius: 3px; background: rgba(255,255,255,0.08); }
-    .cal-day.done { background: var(--success); }
+    .cal-day.cal-green { background: var(--success); }
+    .cal-day.cal-orange { background: #c17c54; }
+    .cal-legend { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 24px; }
+    .cal-legend .cal-day { flex-shrink: 0; }
+    .cal-legend-label { font-size: 0.8rem; color: var(--muted); }
     .msg { padding: 12px; border-radius: 8px; margin-bottom: 16px; background: rgba(107,144,128,0.2); color: var(--success); }
     .week-review { background: rgba(193,124,116,0.15); border: 1px solid var(--danger); padding: 16px; border-radius: var(--radius); margin-bottom: 20px; }
     .week-review h3 { margin-top: 0; color: var(--danger); }
+    .week-review-form { margin-top: 12px; }
+    .week-review-increments { list-style: none; margin: 0 0 16px 0; padding: 0; }
+    .week-review-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .week-review-row:last-child { border-bottom: none; }
+    .week-review-row label { min-width: 120px; font-weight: 500; }
+    .week-review-current { color: var(--muted); font-size: 0.9rem; }
+    .week-review-row input[type="number"] { width: 64px; padding: 6px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: var(--bg); color: var(--text); }
     form.add-habit { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-top: 16px; }
     form.add-habit input { padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: var(--bg); color: var(--text); }
     form.add-habit input[type="number"] { width: 70px; }

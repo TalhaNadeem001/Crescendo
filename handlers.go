@@ -21,19 +21,25 @@ func init() {
 	tmpl = template.Must(template.ParseFiles("templates/layout.html", "templates/index.html"))
 }
 
+// CalCell is a single calendar box: "empty", "green" (1–6 completed days), or "orange" (7 completed days).
+type CalCell struct {
+	Type string // "empty", "green", "orange"
+}
+
 // TemplateData holds everything we pass to the HTML template.
 type TemplateData struct {
-	Habits           []Habit
-	Todos            []Todo
-	History          map[string]DayRecord
-	Today            string
-	TodayRecord      DayRecord
-	NeedsWeekReview  bool
-	Streaks          map[int]int  // habit ID -> current streak
-	CompletedToday   map[int]bool // habit ID -> completed today (for easy template checks)
-	CalendarByHabit  map[int][]string // habit ID -> list of dates from creation to today
-	CalendarHabit    map[string]bool // "habitID_date" -> completed (for heatmap)
-	Message          string
+	Habits              []Habit
+	Todos               []Todo
+	History             map[string]DayRecord
+	Today               string
+	TodayRecord         DayRecord
+	NeedsWeekReview     bool
+	Streaks             map[int]int       // habit ID -> current streak
+	CompletedToday      map[int]bool      // habit ID -> completed today (for easy template checks)
+	CalendarByHabit     map[int][]string  // habit ID -> list of dates (kept for any legacy use)
+	CalendarHabit       map[string]bool   // "habitID_date" -> completed (for heatmap)
+	CalendarCellsByHabit map[int][]CalCell // habit ID -> cells: orange = 7 days, green = 1–6, empty = missed
+	Message             string
 }
 
 // HandleIndex serves the main page: load data, process yesterday's misses, check week review, render HTML.
@@ -79,15 +85,14 @@ func HandleIndex(w http.ResponseWriter, r *http.Request) {
 		streaks[h.ID] = GetStreakForHabit(data, h.ID)
 	}
 
-	// Build per-habit date ranges for the calendar heatmap.
-	// One box per day from habit creation through today; completed days get class "done" (green).
+	// Build per-habit date ranges and completion map, then calendar cells (orange = 7 days, green = 1–6, empty = missed).
 	calMap := make(map[string]bool)
 	calendarByHabit := make(map[int][]string)
+	calendarCellsByHabit := make(map[int][]CalCell)
 	now := time.Now()
 	todayEnd := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, now.Location())
 	for _, h := range data.Habits {
 		start := h.CreatedAt
-		// If CreatedAt is zero (older data), fall back to app CreatedAt or today.
 		if start.IsZero() {
 			if data.CreatedAt != "" {
 				if t, err := time.Parse("2006-01-02", data.CreatedAt); err == nil {
@@ -111,6 +116,35 @@ func HandleIndex(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		calendarByHabit[h.ID] = dates
+		// Build cells: every 7 consecutive completed days → 1 orange box, remainder → green; missed → empty.
+		var cells []CalCell
+		run := 0
+		for _, ds := range dates {
+			done := calMap[calendarKey(h.ID, ds)]
+			if done {
+				run++
+			} else {
+				// Flush completed run: full weeks → orange, remainder → green
+				for run >= 7 {
+					cells = append(cells, CalCell{Type: "orange"})
+					run -= 7
+				}
+				for run > 0 {
+					cells = append(cells, CalCell{Type: "green"})
+					run--
+				}
+				cells = append(cells, CalCell{Type: "empty"})
+			}
+		}
+		for run >= 7 {
+			cells = append(cells, CalCell{Type: "orange"})
+			run -= 7
+		}
+		for run > 0 {
+			cells = append(cells, CalCell{Type: "green"})
+			run--
+		}
+		calendarCellsByHabit[h.ID] = cells
 	}
 
 	msg := ""
@@ -136,17 +170,18 @@ func HandleIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	td := TemplateData{
-		Habits:          data.Habits,
-		Todos:           data.Todos,
-		History:         data.History,
-		Today:           Today(),
-		TodayRecord:     todayRec,
-		NeedsWeekReview: needsReview,
-		Streaks:         streaks,
-		CompletedToday:  completedToday,
-		CalendarByHabit: calendarByHabit,
-		CalendarHabit:   calMap,
-		Message:         msg,
+		Habits:               data.Habits,
+		Todos:                data.Todos,
+		History:              data.History,
+		Today:                Today(),
+		TodayRecord:          todayRec,
+		NeedsWeekReview:      needsReview,
+		Streaks:              streaks,
+		CompletedToday:       completedToday,
+		CalendarByHabit:      calendarByHabit,
+		CalendarHabit:        calMap,
+		CalendarCellsByHabit: calendarCellsByHabit,
+		Message:              msg,
 	}
 	// Execute the template named by the first file we parsed: "layout.html"
 	if err := tmpl.ExecuteTemplate(w, "layout.html", td); err != nil {
@@ -216,10 +251,15 @@ func HandleCompleteHabit(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/?done=1", http.StatusFound)
 }
 
-// HandleWeekReview handles POST when user completes the mandatory 7-day review (increment all).
+// HandleWeekReview handles POST when user completes the 7-day review with per-habit increment amounts.
+// Form: increment_<habit_id>=<number> for each habit. User must choose an amount (0 or positive) per habit.
 func HandleWeekReview(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Redirect(w, r, "/?error=review", http.StatusFound)
 		return
 	}
 	data, err := LoadData()
@@ -227,7 +267,19 @@ func HandleWeekReview(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	CompleteWeekReview(data)
+	increments := make(map[int]int)
+	for _, h := range data.Habits {
+		key := "increment_" + strconv.Itoa(h.ID)
+		val := r.FormValue(key)
+		amount := 0
+		if val != "" {
+			if n, err := strconv.Atoi(val); err == nil && n >= 0 {
+				amount = n
+			}
+		}
+		increments[h.ID] = amount
+	}
+	CompleteWeekReview(data, increments)
 	if err := SaveData(data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

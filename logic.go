@@ -121,10 +121,16 @@ func NeedsWeekReview(data *AppData) (bool, error) {
 	return days >= 7, nil
 }
 
-// CompleteWeekReview increments all habits by 1 and sets LastWeekReview to today.
-func CompleteWeekReview(data *AppData) {
+// CompleteWeekReview increments each habit by the user-chosen amount and sets LastWeekReview to today.
+// increments maps habit ID -> amount to add (can be 0).
+func CompleteWeekReview(data *AppData, increments map[int]int) {
 	for i := range data.Habits {
-		data.Habits[i].Quantity++
+		id := data.Habits[i].ID
+		add := increments[id]
+		if add < 0 {
+			add = 0
+		}
+		data.Habits[i].Quantity += add
 	}
 	data.LastWeekReview = Today()
 }

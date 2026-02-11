@@ -3,9 +3,19 @@
 {{if .NeedsWeekReview}}
 <div class="week-review">
   <h3>📅 7-day review</h3>
-  <p>It's been 7 days. You can <strong>edit habit names</strong> below, then complete the review to increment all habit targets. Adding a new task is optional.</p>
-  <form method="post" action="/week-review" style="display:inline;">
-    <button type="submit" class="btn btn-primary">Complete week review (increment all)</button>
+  <p>It's been 7 days. Choose how much to <strong>increment each habit</strong> below, then complete the review. You can also edit habit names in the card.</p>
+  <form method="post" action="/week-review" class="week-review-form">
+    <ul class="week-review-increments">
+      {{range .Habits}}
+      <li class="week-review-row">
+        <label for="increment-{{.ID}}">{{.Name}}</label>
+        <span class="week-review-current">{{.Quantity}} {{.Unit}}</span>
+        <input type="number" id="increment-{{.ID}}" name="increment_{{.ID}}" value="1" min="0" max="999" required aria-label="Increment {{.Name}} by">
+        <span class="cal-legend-label">add</span>
+      </li>
+      {{end}}
+    </ul>
+    <button type="submit" class="btn btn-primary">Complete week review</button>
   </form>
 </div>
 {{end}}
@@ -30,7 +40,7 @@
     <span class="habit-name">{{.Name}}</span>
     {{end}}
     <span class="habit-qty">{{.Quantity}} {{.Unit}}</span>
-    {{if index $.Streaks .ID}}<span class="streak">🔥 {{index $.Streaks .ID}} day streak</span>{{end}}
+    {{if index $.Streaks .ID}}<span class="streak">{{index $.Streaks .ID}} day streak</span>{{end}}
     {{if index $.CompletedToday .ID}}
     <form method="post" action="/complete" style="display:inline;">
       <input type="hidden" name="habit_id" value="{{.ID}}">
@@ -44,14 +54,18 @@
     </form>
     {{end}}
   </div>
-  {{/* One box per day (creation → today); green = completed that day */}}
-  <div class="calendar" style="padding-left: 0;" aria-label="Days: green = done">
-    {{range index $.CalendarByHabit $h.ID}}
-    <span class="cal-day {{if index $.CalendarHabit (printf "%d_%s" $h.ID .)}}done{{end}}" title="{{.}}"></span>
+  {{/* Orange = 7 days in a row, green = 1–6 days, empty = missed */}}
+  <div class="calendar" style="padding-left: 0;" aria-label="Orange = 7 days, green = 1–6 days, empty = missed">
+    {{range index $.CalendarCellsByHabit $h.ID}}
+    <span class="cal-day cal-{{.Type}}" title="{{.Type}}"></span>
     {{end}}
   </div>
   {{end}}
   {{end}}
+  <div class="cal-legend" aria-hidden="true">
+    <span class="cal-day cal-green" title="1 day"></span><span class="cal-legend-label">= 1 day</span>
+    <span class="cal-day cal-orange" title="7 days"></span><span class="cal-legend-label">= 7 days</span>
+  </div>
 </div>
 
 <div class="card">
